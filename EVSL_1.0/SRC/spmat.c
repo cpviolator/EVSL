@@ -177,6 +177,7 @@ double dcsrinfnrm(csrMat *A){
 void dcsrmv(char trans, int nrow, int ncol, double *a, 
     int *ia, int *ja, double *x, double *y) {
   int  len, jj=nrow;
+  (void)(ncol); //Is currently unused
   if (trans == 'N') {  
     //#pragma omp parallel for schedule(guided)
     double r;

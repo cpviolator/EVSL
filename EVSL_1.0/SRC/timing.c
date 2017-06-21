@@ -1,3 +1,9 @@
+#if __STDC_VERSION__ >= 199901L
+#define _XOPEN_SOURCE 600
+#else
+#define _XOPEN_SOURCE 500
+#endif /* __STDC_VERSION__ */
+
 #include <time.h>
 #include <math.h>
 
@@ -11,8 +17,19 @@
  */
 double cheblan_timer() {
   struct timespec t ;
+#if _POSIX_MONOTONIC_CLOCK >= 0
   clock_gettime (CLOCK_MONOTONIC /*CLOCK_PROCESS_CPUTIME_ID*/, &t) ;
-  return ((double) (t.tv_sec) + 1e-9 * (double) (t.tv_nsec));
+#else
+  if(sysconf (_SC_MONOTONIC_CLOCK) > 2)  {
+    clock_gettime (CLOCK_MONOTONIC /*CLOCK_PROCESS_CPUTIME_ID*/, &t) ;
+  }
+  else {
+    gettimeofday(&tv, NULL)
+  }
+
+#endif
+
+return ((double) (t.tv_sec) + 1e-9 * (double) (t.tv_nsec));
 }
 
 /** 
