@@ -1,10 +1,10 @@
-//============================================================================
-// Routines for computing eigenvalues of a symmetric tridiagonal matrix.
-// They are wrappers of the LAPACK routine DSTEV() or sstev_()
-//============================================================================
+/*============================================================================
+ Routines for computing eigenvalues of a symmetric tridiagonal matrix.
+ They are wrappers of the LAPACK routine DSTEV() or sstev_()
+============================================================================ */
 
 #include <stdio.h>
-#include <string.h>  // for memcpy, strcmp, strncmp, etc.
+#include <string.h>  /* for memcpy, strcmp, strncmp, etc. */
 #include "def.h"
 #include "blaslapack.h"
 #include "struct.h"
@@ -33,25 +33,25 @@
 
 int SymmTridEig(double *eigVal, double *eigVec, int n, 
                 const double *diag, const double *sdiag) {
-  // compute eigenvalues and eigenvectors or eigvalues only
+  /* compute eigenvalues and eigenvectors or eigvalues only */
   char jobz = eigVec ? 'V' : 'N'; 
   int nn = n;
   int ldz = n;
-  int info;  // output flag
-  // copy diagonal and subdiagonal elements to alp and bet
+  int info;  /* output flag */
+  /* copy diagonal and subdiagonal elements to alp and bet */
   double *alp = eigVal;
   double *bet;
   Malloc(bet, n-1, double);
   memcpy(alp, diag, n*sizeof(double));
   memcpy(bet, sdiag, (n-1)*sizeof(double));
-  // allocate storage for computation
+  /* allocate storage for computation */
   double *sv = eigVec;
   double *work = NULL;
   if (jobz == 'V') {
     Malloc(work, 2*n-2, double);
   }
   DSTEV(&jobz, &nn, alp, bet, sv, &ldz, work, &info);
-  // free memory
+  /* free memory */
   free(bet);
   if (work) {
     free(work);
@@ -59,7 +59,7 @@ int SymmTridEig(double *eigVal, double *eigVec, int n,
   if (info) {
     printf("DSTEV ERROR: INFO %d\n", info);
   }
-  // return info
+  /* return info */
   return info;
 }
 
@@ -84,36 +84,36 @@ int SymmTridEig(double *eigVal, double *eigVec, int n,
  * ----------------------------------------------------------------------- */
 int SymmTridEigS(double *eigVal, double *eigVec, int n, double vl, double vu,
                  int *nevO, const double *diag, const double *sdiag) {
-  char jobz = 'V';  // compute eigenvalues and eigenvectors
-  char range = 'V'; // compute eigenvalues in an interval
+  char jobz = 'V';  /* compute eigenvalues and eigenvectors */
+  char range = 'V'; /* compute eigenvalues in an interval */
 
-  // this does not use mwlapack for mex files
+  /* this does not use mwlapack for mex files */
   int info;  
-  //int idum = 0;
-  //-------------------- isuppz not needed  
+  /*int idum = 0;
+  -------------------- isuppz not needed   */
   int *isuppz;
   Malloc(isuppz, 2*n, int);
-  //-------------------- real work array
+  /*-------------------- real work array*/
   double *work;
   int lwork = 18*n;
   Malloc(work, lwork, double);
-  //-------------------- int work array
+  /*-------------------- int work array*/
   int *iwork;
   int liwork = 10*n;
   Calloc(iwork, liwork, int);
-  //-------------------- copy diagonal + subdiagonal elements
-  //                     to alp and bet
+  /*-------------------- copy diagonal + subdiagonal elements
+                       to alp and bet*/
   double *alp; 
   double *bet;
   Malloc(bet, n, double);
   Malloc(alp, n, double);
-  //
+
   memcpy(alp, diag, n*sizeof(double));
   if (n > 1) {
     memcpy(bet, sdiag, (n-1)*sizeof(double));
   }
 
-  //-------------------- allocate storage for computation
+  /*-------------------- allocate storage for computation*/
   logical tryrac = 1;
   double t0 = vl;
   double t1 = vu;
@@ -126,13 +126,12 @@ int SymmTridEigS(double *eigVal, double *eigVec, int n, double vl, double vu,
     printf("dstemr_ error %d\n", info);
   }
 
-  //-------------------- free memory
+  /*-------------------- free memory*/
   free(bet);
   free(alp);
   free(work);
   free(iwork);
   free(isuppz);
-  //
   return info;
 }
 
@@ -213,7 +212,7 @@ void CGS_DGKS2(int n, int k, int i_max, double *Z, double *Q,
   }
 }
 
-//  max number of reorthogonalizations 
+/*  max number of reorthogonalizations */
 #define NGS_MAX 2
 /**
  * @brief Orthogonalize columns of n-by-k matrix V 
@@ -243,11 +242,11 @@ void orth(double *V, int n, int k, double *Vo, double *work) {
  * Recover the eigenvectors This is needed for GEN_MM folder only not DOS folder
  */
 int scalEigVec(int n, int nev, double *Y, double* sqrtdiag) {
-  // Formula (2.19) in the paper.  Y(:,i) is x in the paper and D^{1/2} is sqrtdiag here
-  // n: matrix size
-  // nev: number of eigenvectors V: n*nev
-  // V: computed eigenvectors
-  // sqrtdiag: square root of diagonal entries of B
+  /* Formula (2.19) in the paper.  Y(:,i) is x in the paper and D^{1/2} is sqrtdiag here
+     n: matrix size
+     nev: number of eigenvectors V: n*nev
+     V: computed eigenvectors
+     sqrtdiag: square root of diagonal entries of B*/
   int i, j;
   double *v;
   for (i=0; i<nev; i++){

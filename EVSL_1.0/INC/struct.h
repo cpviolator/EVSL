@@ -171,9 +171,9 @@ typedef struct _evsldata {
  * Define a struct for using polynomial to solve B
  */
 typedef struct _BSolDataPol {
-  polparams pol_sol; // polynomial for approximating B^{-1}
-  double *wk; // working array for performing matvec
-  double intv[2]; // spectrum range of B 
+  polparams pol_sol; /* polynomial for approximating B^{-1} */
+  double *wk; /* working array for performing matvec */
+  double intv[2]; /* spectrum range of B  */
 } BSolDataPol;
 
 

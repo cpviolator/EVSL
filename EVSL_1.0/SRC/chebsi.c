@@ -47,7 +47,7 @@ int ChebSI(int nev, double *intv, int maxit,
   int icol, nmv = 0;
   double tolP = tol*0.01;
   tall = cheblan_timer();
-  //    int max_deg = pol->max_deg,   min_deg = pol->min_deg;
+  /*    int max_deg = pol->max_deg,   min_deg = pol->min_deg; */
   /*-------------------   size of A */
   int n = evsldata.n;
   /*--------------------   some constants frequently used */
@@ -67,8 +67,8 @@ int ChebSI(int nev, double *intv, int maxit,
   int cvcheck = 5;
   /*-------------------   misc */
   int i,j;
-  // this code(step 1)is the same as in cheblan; to be moved 
-  // to a separate file for reuse
+  /* this code(step 1)is the same as in cheblan; to be moved  
+   to a separate file for reuse */
   /*-------------------- unpack some values from pol */
   int deg =pol->deg;
   double gamB=pol->gam, bar=pol->bar;
@@ -88,10 +88,10 @@ int ChebSI(int nev, double *intv, int maxit,
   Malloc(T, nev2, double);
   Malloc(evecT, nev2, double);
   Malloc(evalT, nev, double);
-  ///*-------------------- memory for converged Ritz pairs (Y, Lam) */
-  //    double *Y, *Lam;
-  //    Malloc(Y, nev2, double);
-  //    Malloc(Lam, nev2, double);
+  /*-------------------- memory for converged Ritz pairs (Y, Lam) */
+  /*    double *Y, *Lam;
+      Malloc(Y, nev2, double);
+      Malloc(Lam, nev2, double); */
 
   /*-------------------- memory for block of approx. eigenvectors/evals and their products with p(A)*/
   double *V, *Lam, *PV, *R, *res; 
@@ -99,23 +99,23 @@ int ChebSI(int nev, double *intv, int maxit,
   Malloc(V, nnev, double);
   Malloc(PV, nnev, double);
   Malloc(Lam, nev, double);
-  Malloc(R, nnev, double);   // block of residuals 
-  Malloc(res, nev, double);  // residual norms w.r.t. A
+  Malloc(R, nnev, double);   /* block of residuals  */
+  Malloc(res, nev, double);  /* residual norms w.r.t. A */
 
   /*-------------------- number of locked, and unconverged (active) pairs */
   int nlock, nact, nlock_ab;  
-  int *act_idx, *lock_idx;  // arrays used to store idices of active and locked columns of V 
+  int *act_idx, *lock_idx;  /* arrays used to store idices of active and locked columns of V  */
   Malloc(act_idx, nev, int);
   Malloc(lock_idx, nev, int);
   nlock = 0;
   nact  = nev;    
-  nlock_ab = 0;  // number of locked eigenvalues that are in [a,b]
+  nlock_ab = 0;  /* number of locked eigenvalues that are in [a,b] */
 
   /*-------------------- alloc some work space */
   double *work, *buf;
   int work_size = 3*n;
   Malloc(work, work_size, double);
-  Malloc(buf, nnev, double);  // buffer for DGEMM calls
+  Malloc(buf, nnev, double);  /* buffer for DGEMM calls */
 
   /*-------------------- orthonormalize initial V and compute PV = P(A)V */
   orth(vinit,n,nev,V,work);
@@ -132,7 +132,7 @@ int ChebSI(int nev, double *intv, int maxit,
   while ( (it < maxit) && (find_more) ) {
 
     /*---  V <- orth(PV)  */ 
-    int nnlock = n*nlock;                                      // pointer to the first active column
+    int nnlock = n*nlock; /* pointer to the first active column */
     int nnact  = n*nact;
     DCOPY(&nnact, PV+nnlock, &one, V+nnlock, &one);
     /*---  Orthogonalize active columns V(:,nlock:nev-1) against locked columns V(:,0:nlocked-1)*/ 
@@ -145,20 +145,20 @@ int ChebSI(int nev, double *intv, int maxit,
     DCOPY(&nnact, buf, &one, V+nnlock, &one);
     /*---  PV <- P(A)*V */
     tm = cheblan_timer();
-    //polyfilt(A, deg, mu, dd, cc, V+nnlock, nact, PV+nnlock, work); 
+    /*polyfilt(A, deg, mu, dd, cc, V+nnlock, nact, PV+nnlock, work);  */
     for (icol = nlock; icol<nlock+nact; icol++)
       ChebAv(pol, V+icol*n, PV+icol*n, work);
     tmv += cheblan_timer() - tm;
     nmv += deg*nact;
-    // orthogonalize PVact against Vlocked
+    /* orthogonalize PVact against Vlocked */
     if ( nlock>0 ) { 
       DGEMM(&cT, &cN, &nlock, &nact, &n, &done, V, &n, PV+nnlock, &n, &dzero, T, &nev);
       DGEMM(&cN, &cN, &n, &nact, &nlock, &dmone, V, &n, T, &nev, &done, PV+nnlock, &n);
     }
-    // end orthogonalize PVact against Vlocked
+    /* end orthogonalize PVact against Vlocked */
     /*---  Lock converged pairs */
     if ( ((it+1)%cvcheck == 0) || ((it+1)==maxit)  ) {
-      //// Rayleigh--Ritz with unconverged columns V
+      /* Rayleigh--Ritz with unconverged columns V */
       /*---  T = V'p(A)V; [evecT,evalT]=eig(T);    */
       DGEMM(&cT,&cN,&nact,&nact,&n,&done,V+nnlock,&n,PV+nnlock,&n,&dzero,T,&nev);     
       SymEigenSolver(nact, T, nev, evecT, nev, evalT+nlock);
@@ -170,13 +170,13 @@ int ChebSI(int nev, double *intv, int maxit,
       /*---  Compute active residuals R = PV - V*diag(evalT)    */
       for (i=nlock; i<nev; i++) {
         double t = -evalT[i]; 
-        //DSCAL(&n, &t, R+i*n, &one); 
+        /*DSCAL(&n, &t, R+i*n, &one);  */
         for (j=0; j<n; j++) {
           R[i*n+j] = PV[i*n+j]+t*V[i*n+j];    
         }
       }
       /*---  Detect converged eigenpairs w.r.t. p(A) and A (candidates). Move them to first nlock columns    */
-      int nlock_new = 0;    // number of newly locked pairs 
+      int nlock_new = 0;    /* number of newly locked pairs  */
       int nlock_ab_new = 0; 
       nact = 0;
       for (i=nlock; i<nev; i++) {
@@ -188,7 +188,7 @@ int ChebSI(int nev, double *intv, int maxit,
           matvec_A(V+i*n, buf);
           tmv += cheblan_timer() - tm;
           nmv++;
-          double rq = DDOT(&n, V+i*n, &one, buf, &one);  // Rayleigh Quotient for A
+          double rq = DDOT(&n, V+i*n, &one, buf, &one);  /* Rayleigh Quotient for A */
           for (j=0; j < n; j++) {
             R[i*n+j] = buf[j] - rq*V[i*n+j]; 
           }

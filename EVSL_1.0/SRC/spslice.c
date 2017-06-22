@@ -48,7 +48,7 @@ int kpmdos(int Mdeg, int damping, int nvec, double *intv,
   double *tmp,  ctr, wid; 
   double scal, t, tcnt, beta1, beta2, aa, bb;
   int k, k1, i, m, mdegp1, one=1;
-  //-------------------- check if the interval is valid
+  /*-------------------- check if the interval is valid */
   if (check_intv(intv, stdout) < 0) {
     return -1;
   }
@@ -97,7 +97,7 @@ int kpmdos(int Mdeg, int damping, int nvec, double *intv,
     
     memset(vkm1, 0, n*sizeof(double));
     mu[0] += jac[0];
-    //-------------------- for eigCount
+    /*-------------------- for eigCount */
     tcnt -= jac[0]*(beta2-beta1);  
     /*-------------------- Chebyshev (degree) loop */
     for (k=0; k<Mdeg; k++){
@@ -114,7 +114,7 @@ int kpmdos(int Mdeg, int damping, int nvec, double *intv,
       for (i=0; i<n; i++) {
         vkp1[i] = scal*(vkp1[i]-ctr*vk[i]) - vkm1[i];
       }
-      //-------------------- rotate pointers to exchange vectors
+      /*-------------------- rotate pointers to exchange vectors */
       tmp = vkm1;
       vkm1 = vk;
       vk = vkp1;
@@ -127,7 +127,7 @@ int kpmdos(int Mdeg, int damping, int nvec, double *intv,
       tcnt -= t*(sin(k1*beta2)-sin(k1*beta1))/k1;  
     }
   }
-  //--------------------change of interval + scaling in formula
+  /*--------------------change of interval + scaling in formula */
   t = 1.0 /(((double)nvec)*PI) ;
   mdegp1 = Mdeg+1;
   DSCAL(&mdegp1, &t, mu, &one) ;
@@ -152,7 +152,6 @@ int kpmdos(int Mdeg, int damping, int nvec, double *intv,
   *  in the expanded form:  \f$\sum mu_i C_i /\sqrt{1-t^2}\f$
   **/
 void intChx(const int Mdeg, double *mu, const int npts, double *xi, double *yi) {
-  //
   int ndp1, j, k;
   if(npts <= 0) {
     fprintf(stderr, "Must have more than 0 points");
@@ -161,18 +160,18 @@ void intChx(const int Mdeg, double *mu, const int npts, double *xi, double *yi) 
   double val0, theta0, *thetas;
   Malloc(thetas, npts, double);
   ndp1   = Mdeg+1; 
-  //  if (xi[0]<-1.0) xi[0] = -1; 
-  //if (xi[npts-1]> 1.0) xi[npts-1]  = 1; 
+  /*  if (xi[0]<-1.0) xi[0] = -1;  */
+  /*if (xi[npts-1]> 1.0) xi[npts-1]  = 1;  */
 
   for (j=0; j<npts; j++)
     thetas[j] = acos(xi[j]);
   theta0 = thetas[0];
   for (j=0; j<npts; j++) 
     yi[j] = mu[0]*(theta0 - thetas[j]);
-  //-------------------- degree loop  
+  /*-------------------- degree loop   */
   for (k=1; k<ndp1; k++){
     val0 = sin(k*theta0)/k;
-    //-------------------- points loop
+    /*-------------------- points loop */
     for (j=0; j<npts; j++)
       yi[j] += mu[k]*(val0 - sin(k*thetas[j])/k);
   }
@@ -209,27 +208,26 @@ int spslicer(double *sli, double *mu, int Mdeg, double *intv, int n_int, int npt
     return -1;
   }
 
-  // adjust a, b: intv[0], intv[1]
+  /* adjust a, b: intv[0], intv[1] */
   aa = max(intv[0], intv[2]);  bb = min(intv[1], intv[3]);
   if (intv[0] < intv[2] || intv[1] > intv[3]) {
     fprintf(stdout, " warning [%s (%d)]:  interval (%e, %e) is adjusted to (%e, %e)\n",
         __FILE__, __LINE__, intv[0], intv[1], aa, bb);
   }
 
-  //-------------------- 
   memset(sli,0,(n_int+1)*sizeof(double));
-  //-------------------- transform to ref interval [-1 1]
-  //-------------------- take care of trivial case n_int==1
+  /*-------------------- transform to ref interval [-1 1]
+    -------------------- take care of trivial case n_int==1 */
   if (n_int == 1){
     sli[0] = intv[0];
     sli[1] = intv[1];
     return 0;
   }
-  //-------------------- general case 
+  /*-------------------- general case  */
   ctr = (intv[3] + intv[2])/2;
   wid = (intv[3] - intv[2])/2;
-  aL  = (aa - ctr)/wid;   // (a - ctr)/wid 
-  bL  = (bb - ctr)/wid;   // (b - ctr)/wid
+  aL  = (aa - ctr)/wid;   /* (a - ctr)/wid */
+  bL  = (bb - ctr)/wid;   /* (b - ctr)/wid */
   aL = max(aL,-1.0);
   bL = min(bL,1.0);
   npts = max(npts,2*n_int+1);
@@ -237,17 +235,17 @@ int spslicer(double *sli, double *mu, int Mdeg, double *intv, int n_int, int npt
   Malloc(xi, npts, double);
   Malloc(yi, npts, double);
   linspace(aL, bL, npts, xi);
-  //printf(" aL %15.3e bL %15.3e \n",aL,bL);
-  //-------------------- get all integrals at the xi's 
-  //-------------------- exact integrals used.
+  /*printf(" aL %15.3e bL %15.3e \n",aL,bL);
+    -------------------- get all integrals at the xi's 
+    -------------------- exact integrals used. */
   intChx(Mdeg, mu, npts, xi, yi) ; 
-  //-------------------- goal: equal share of integral per slice
+  /* ------------------- goal: equal share of integral per slice */
   target = yi[npts-1] / (double)n_int;
   ls = 0;
   ii = 0;
-  // use the unadjust left boundary
+  /* use the unadjust left boundary */
   sli[ls] = intv[0];
-  //-------------------- main loop 
+  /*-------------------- main loop  */
   while (++ls < n_int) {
     while (ii < npts && yi[ii] < target) {
       ii++;
@@ -255,20 +253,20 @@ int spslicer(double *sli, double *mu, int Mdeg, double *intv, int n_int, int npt
     if (ii == npts) {
       break;
     }
-    //-------------------- take best of 2 points in interval
+    /*-------------------- take best of 2 points in interval */
     if ( (target-yi[ii-1]) < (yi[ii]-target)) {
       ii--;
     }
     sli[ls] = ctr + wid*xi[ii];
-    //-------------------- update target.. Slice size adjusted
+    /*-------------------- update target.. Slice size adjusted */
     target = yi[ii] + (yi[npts-1] - yi[ii])/(n_int-ls);
-    //printf("ls %d, n_int %d, target %e\n", ls, n_int, target);
+    /*printf("ls %d, n_int %d, target %e\n", ls, n_int, target); */
   }
 
-  // use the unadjust left boundary
+  /* use the unadjust left boundary */
   sli[n_int] = intv[1];
 
-  //-------------------- check errors
+  /*-------------------- check errors */
   if (ls != n_int) {
     err = 1;
   }

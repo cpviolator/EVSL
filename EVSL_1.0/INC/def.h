@@ -13,11 +13,11 @@
 #define M_PI 3.14159265358979323846
 #endif
 #define PI M_PI 
-//3.14159265358979323846
+/*3.14159265358979323846 */
 #define orthTol 1e-14
 
 #define CHKERR(ierr) assert(!(ierr))
-//#define CHKREQ(ierr) { if (ierr) { return (ierr); } }
+/* #define CHKREQ(ierr) { if (ierr) { return (ierr); } } */
 
 #define Malloc(base, nmem, type) {\
   (base) = (type*) malloc((nmem)*sizeof(type)); \

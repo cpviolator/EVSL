@@ -4,7 +4,7 @@
 #include "blaslapack.h"
 #include "def.h"
 #include "internal_proto.h"
-#include "string.h"  //for memset
+#include "string.h"  /*for memset */
 #include "struct.h"
 
 /**
@@ -33,21 +33,20 @@ void spslicer2(double* xi, double* yi, int n_int, int npts, double* sli) {
   double t;
   int ls = 0;
 
-  //-------------------- in-place integration ydos<--- int ydos..
+  /*-------------------- in-place integration ydos<--- int ydos..*/
   simpson(xi, yi, npts);
-  //
   t = yi[0];
   want = (yi[npts - 1] - yi[0]) / (double)n_int;
   sli[ls] = xi[k];
-  //-------------------- First point - t should be zero actually
+  /*-------------------- First point - t should be zero actually */
   for (k = 1; k < npts; k++) {
     if (yi[k] - t >= want) {
-      //-------------------- New interval defined
+      /*-------------------- New interval defined */
       ls = ls + 1;
       sli[ls] = xi[k];
       t = yi[k];
     }
   }
-  //-------------------- bound for last interval is last point.
+  /*-------------------- bound for last interval is last point. */
   sli[n_int] = xi[npts - 1];
 }

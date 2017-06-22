@@ -62,10 +62,10 @@ int ChebLanNr(double *intv, int maxit, double tol, double *vinit,
   /*-------------------- for stats */
   double tr0, tr1, tall;
   double *y, flami; 
-  //-------------------- to report timings/
+  /*-------------------- to report timings/ */
   tall = cheblan_timer();
   int i, k, kdim;
-  // handle case where fstats is NULL. Then no output. Needed for openMP.
+  /* handle case where fstats is NULL. Then no output. Needed for openMP. */
   int do_print = 1;   
   if (fstats == NULL){
     do_print = 0;
@@ -125,10 +125,10 @@ int ChebLanNr(double *intv, int maxit, double tol, double *vinit,
   Malloc(eT, maxit, double);
   double *Rvec, *Lam, *res, *EvalT, *EvecT;
   /*-------------------- Lam, Rvec: the converged (locked) Ritz values vecs*/
-  Malloc(Lam, maxit, double);         // holds computed Ritz values
-  Malloc(res, maxit, double);         // residual norms (w.r.t. ro(A))
-  Malloc(EvalT, maxit, double);       // eigenvalues of tridia. matrix  T
-  //Malloc(EvecT, maxit*maxit, double); // Eigen vectors of T
+  Malloc(Lam, maxit, double);         /* holds computed Ritz values */
+  Malloc(res, maxit, double);         /* residual norms (w.r.t. ro(A)) */
+  Malloc(EvalT, maxit, double);       /* eigenvalues of tridia. matrix  T */
+  /*Malloc(EvecT, maxit*maxit, double);  Eigen vectors of T */
   /*-------------------- nev = current number of converged e-pairs 
                          nconv = converged eigenpairs from looking at Tk alone */
   int nev, nconv = 0;
@@ -155,7 +155,7 @@ int ChebLanNr(double *intv, int maxit, double tol, double *vinit,
     DSCAL(&n, &t, Z, &one);
   } else {
     /* 2-norm */
-    t = 1.0 / DNRM2(&n, V, &one); // add a test here.
+    t = 1.0 / DNRM2(&n, V, &one); /* add a test here. */
   }
   /* unit B-norm or 2-norm */
   DSCAL(&n, &t, V, &one);
@@ -171,7 +171,7 @@ int ChebLanNr(double *intv, int maxit, double tol, double *vinit,
   /*--------------------  Lanczos recurrence coefficients */
   double alpha, nalpha, beta=0.0, nbeta;
   int count = 0;
-  // ---------------- main Lanczos loop 
+  /* ---------------- main Lanczos loop  */
   for (k=0; k<maxit; k++) {
     /*-------------------- quick reference to Z(:,k-1) when k>0*/
     zold = k > 0 ? Z+(k-1)*n : NULL;
@@ -310,16 +310,16 @@ int ChebLanNr(double *intv, int maxit, double tol, double *vinit,
   } /* end of the main loop */
 
   /*-------------------- compute eig vals and vector */    
-  Malloc(EvecT, kdim*kdim, double); // Eigen vectors of T
+  Malloc(EvecT, kdim*kdim, double); /* Eigen vectors of T */
   SymmTridEig(EvalT, EvecT, kdim, dT, eT);
   
   /*-------------------- done == compute Ritz vectors */
-  Malloc(Rvec, nconv*n, double);       // holds computed Ritz vectors
+  Malloc(Rvec, nconv*n, double);       /* holds computed Ritz vectors */
 
   nev = 0;
   for (i=0; i<count; i++) {
     flami = EvalT[i];
-    //-------------------- reject eigenvalue if rho(lam)<bar
+    /*-------------------- reject eigenvalue if rho(lam)<bar */
     if (flami < bar) {
       continue;
     }

@@ -65,7 +65,7 @@ int RatLanTr(int lanm, int nev, double *intv, int maxit,
   const int ifGenEv = evsldata.ifGenEv;
   /*-------------------- for stats */
   double tall=0.0;
-  //double tolP = tol;
+  /*double tolP = tol; */
   double tr, last_tr;
   tall = cheblan_timer();
   int do_print = 1;
@@ -87,7 +87,7 @@ int RatLanTr(int lanm, int nev, double *intv, int maxit,
   double nevInc = 0.2;   /* add 1  + 20% each time it is needed */
   /*-------------------- if we have at least nev/ev_frac good candidate 
                          eigenvalues from p(A) == then we restart to lock them in */
-  //int evFrac = 2;
+  /*int evFrac = 2; */
   /*--------------------   some constants frequently used */
   /* char cT='T'; */
   char cN = 'N';
@@ -108,8 +108,8 @@ int RatLanTr(int lanm, int nev, double *intv, int maxit,
   }
   double aa = intv[0];
   double bb = intv[1];
-  //int deg = rat->pow;
-  double bar = 0.5; // for the scaled rational filter
+  /*int deg = rat->pow; */
+  double bar = 0.5; /* for the scaled rational filter */
   /*-----------------------------------------------------------------------* 
    * *thick restarted* Lanczos step 
    *-----------------------------------------------------------------------*/
@@ -560,7 +560,7 @@ int RatLanTr(int lanm, int nev, double *intv, int maxit,
         /* r = resi[i];*/
         r = res0;
         if (r < tol) {
-          //-------------------- check if need to realloc
+          /*-------------------- check if need to realloc */
           if (lock >= nev) {
             nev += 1 + (int) (nev*nevInc);
             if (do_print) {

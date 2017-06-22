@@ -16,13 +16,13 @@
  * @brief set default values for polparams struct.
  **/
 void set_pol_def(polparams *pol){
-  pol->max_deg = 1000;     // max degree allowed
-  pol->min_deg = 2;        // min allowed degree
-  pol->damping = 2;        // damping. 0 = no damping, 1 = Jackson, 2 = Lanczos
-  pol->thresh_ext = 0.50;  // threshold for accepting polynomial for end intervals 
-  pol->thresh_int = 0.8;   // threshold for accepting polynomial for interior
-  pol->tol = 1e-3;         // tolerance for LS approximation
-  pol-> deg = 0;           // degree =0 means determine optimal degree.
+  pol->max_deg = 1000;     /* max degree allowed */
+  pol->min_deg = 2;        /* min allowed degree */
+  pol->damping = 2;        /* damping. 0 = no damping, 1 = Jackson, 2 = Lanczos */
+  pol->thresh_ext = 0.50;  /* threshold for accepting polynomial for end intervals  */
+  pol->thresh_int = 0.8;   /* threshold for accepting polynomial for interior */
+  pol->tol = 1e-3;         /* tolerance for LS approximation */
+  pol-> deg = 0;           /* degree =0 means determine optimal degree. */
 }
 
 /**
@@ -45,18 +45,18 @@ int dampcf(int m, int damping, double *jac){
   } 
   if (damping == 2) 
     thetL = PI/(dm+1);   
-  jac[0] = 0.5;    // <<-- Note this is instead of 1 - in order
-  // to reflect  the 1/2 factor in zeroth term
-  // of Chebyshev expansion
+  jac[0] = 0.5;    /* <<-- Note this is instead of 1 - in order 
+   to reflect  the 1/2 factor in zeroth term
+   of Chebyshev expansion */
 
   for (k=1; k<=m; k++) {
     if (damping == 0) {
       jac[k] = 1.0;
     } else if (damping == 1){  
-      //-------------------- Note: slightly simpler formulas for jackson: 
+      /*-------------------- Note: slightly simpler formulas for jackson:  */
       k1 = k+1;
       jac[k] = a1*sin(k1*thetJ)/a2 + (1-k1*a1)*cos(k*thetJ) ; 
-      //-------------------- Lanczos sigma-damping: 
+      /*-------------------- Lanczos sigma-damping:  */
     } else {
       jac[k] = sin(k*thetL)/(k*thetL);
     }
@@ -108,14 +108,14 @@ int chebxPltd(int m, double *mu, int npts, double *xi, double *yi) {
   Malloc(vkp1, n, double);
   Malloc(vk, n, double);
   double *tmp;
-  //-------------------- compute p(xi)
+  /*-------------------- compute p(xi) */
   memset(vkm1, 0, n*sizeof(double));
   vecset (n, 1.0, vk) ; 
-  //-------------------- start yi = mu[0]*vk = mu[0]*ones
+  /*-------------------- start yi = mu[0]*vk = mu[0]*ones */
   vecset (n, mu[0], yi) ; 
-  //-------------------- POLYNOMIAL loop
+  /*-------------------- POLYNOMIAL loop */
   for (k=0; k<m; k++) {
-    //-------------------- generates term of degree k+1
+    /*-------------------- generates term of degree k+1 */
     scal = (k==0? 1.0 : 2.0);
     for (j=0; j<n; j++)
       vkp1[j] = scal*xi[j]*vk[j] - vkm1[j];  
@@ -123,10 +123,10 @@ int chebxPltd(int m, double *mu, int npts, double *xi, double *yi) {
     vkm1 = vk;
     vk   = vkp1;
     vkp1 = tmp;
-    //-------------------- accumulation of vector.
+    /*-------------------- accumulation of vector. */
     DAXPY(&n, &mu[k+1], vk, &one, yi, &one) ;
   }
-  //-------------------- done
+  /*-------------------- done */
   free(vkm1);
   free(vkp1);
   free(vk);
@@ -168,22 +168,22 @@ int chebxPltd(int m, double *mu, int npts, double *xi, double *yi) {
  * * */
 void chext(polparams *pol, double aIn, double bIn){
   int max_deg = pol->max_deg;
-  // int min_deg = pol->min_deg;   NOT used 
+  /* int min_deg = pol->min_deg;   NOT used  */
   double thresh = pol->thresh_ext;
   double *mu = pol->mu;
-  //-------------------- local variables 
+  /*-------------------- local variables  */
   double del = 0.1*sqrt((bIn-aIn)*0.5); 
-  //double del = 0.0;
+  /*double del = 0.0; */
   double eps = 1e-13;  
-  //double eps = 0.0;
+  /*double eps = 0.0; */
   double a, b, x, e, c, sigma, sigma1, sigma_new, g0, g1, gnew, s1, s2, s3;
-  double *t0, *t1, *tnew; // coef. of three consecutive cheby. expansions
+  double *t0, *t1, *tnew; /* coef. of three consecutive cheby. expansions */
   double bar, gam;
   int mbest=0;
   int m1 = max_deg+1, j, k;
-  //-------------------- local work space
+  /*-------------------- local work space */
   int work_size = 3*m1;
-  //-------------------- this is for the forced degree case 
+  /*-------------------- this is for the forced degree case  */
   if (pol->deg > 0){
     thresh = -1.0;
     max_deg = pol->deg;
@@ -210,18 +210,19 @@ void chext(polparams *pol, double aIn, double bIn){
   Calloc(t0, work_size, double);
   t1 = t0+m1;
   tnew = t1+m1;
-  // t0 = 1
+  /* t0 = 1 */
   t0[0] = 1.0;
-  // t1(t) = (t-c)*sig1/e
+  /* t1(t) = (t-c)*sig1/e*/
   t1[0] = -c*(sigma1/e);
   t1[1] = (sigma1/e);
-  //-------------------- for evaluating polyn. at x
+  /*-------------------- for evaluating polyn. at x */
   g0 = 1.0;
   g1 = (x-c)*sigma1/e;
   if (g1 < thresh){
     mbest = 1;
   }else{
-    //-------------------- degree loop : [! make sure to start at k=2]
+    /*-------------------- degree loop : [! make sure to start at k=2]
+     * */
     for(k=2;k<=max_deg;k++){
       sigma_new = 1.0/(2.0/sigma1-sigma);
       s1 = sigma_new/e;
@@ -238,11 +239,11 @@ void chext(polparams *pol, double aIn, double bIn){
         t0[j] = t1[j];
         t1[j] = tnew[j];
       }
-      //-------------------- recurrence to evaluate pn(x)
+      /*-------------------- recurrence to evaluate pn(x) */
       gnew = 2*(x-c)*s1*g1 - s3*g0;
       g0 = g1;
       g1 = gnew;
-      //-------------------- best degree
+      /*-------------------- best degree */
       mbest = k;
       if (g1<thresh)
         break;
@@ -284,10 +285,10 @@ int indexofSmallestElement(double *array, int size){
 **/
 int rootchb(int m, double *v, double* jac, double tha, double thb, double *mu,
 	    double *thcOut){
-  int MaxIterBalan = 30;     // max steps in Newton to balance interval
+  int MaxIterBalan = 30;     /* max steps in Newton to balance interval */
   double tolBal; 
-  // do 2 newton steps -- if OK exit otherwise
-  // continue to get root by solving eigv. pb
+  /* do 2 newton steps -- if OK exit otherwise
+     continue to get root by solving eigv. pb*/
   int j, it;
   double fval = 0.0, d;
   double fa, fb, thN, thc;
@@ -296,7 +297,7 @@ int rootchb(int m, double *v, double* jac, double tha, double thb, double *mu,
   /*-------------------- check whether or not this will work */
   fb = dif_eval(v, m, thb, jac);
   fa = dif_eval(v, m, tha, jac);
-  //--------------------this will not work -exit + use higher deg.
+  /*--------------------this will not work -exit + use higher deg. */
   if ((fa>0) || (fb<0))
     return 1 ;
   /*-------------------- Newton iteration to balance the interval*/
@@ -362,7 +363,7 @@ int find_pol(double *intv, polparams *pol) {
   double tha=0.0, thb=0.0, thc=0.0;
   double gam,  thresh;
   int m, j, nitv, mbest;
-  //-------------------- intervals related
+  /*-------------------- intervals related */
   if (check_intv(intv, stdout) < 0) {
     return -1;
   }
@@ -372,7 +373,7 @@ int find_pol(double *intv, polparams *pol) {
   Malloc(v, max_deg+1, double);
   Malloc(jac, max_deg+1, double);
   /*-------------------- A parameter for interval check */
-  // double IntTol = 2*DBL_EPSILON; // If b*IntTol>1 accept [a b] extreme
+  /* double IntTol = 2*DBL_EPSILON;  If b*IntTol>1 accept [a b] extreme */
   double IntTol = 0.0005;
   double aa, bb;
   aa = max(intv[0], intv[2]);  bb = min(intv[1], intv[3]);
@@ -387,34 +388,34 @@ int find_pol(double *intv, polparams *pol) {
   pol->cc = cc;
   pol->dd = dd; 
   /*-------------------- adjust intervals just in case. */
-  //a = max(a, lmin);
-  //b = min(b, lmax);
+  /*a = max(a, lmin); */
+  /*b = min(b, lmax); */
   /*   transform [lmin, lmax] to [-1,1] by y = (x-cc) / dd
    * transform [a, b] to [aT, bT] accordingly */
   aa  = (aa - cc) / dd;
   bb  = (bb - cc) / dd;
   aa  = max(aa, -1.0);
   bb  = min(bb,  1.0);
-  //printf("transformed interval [%.15e %.15e]\n", a,b);
+  /*printf("transformed interval [%.15e %.15e]\n", a,b); */
   thb = acos(bb);
   tha = acos(aa);
-  //printf(" a = %e   b = %e  tha = %e thb = %e\n",a,b,tha,thb);
-  // right interval. Same thing on other end
+  /*printf(" a = %e   b = %e  tha = %e thb = %e\n",a,b,tha,thb); */
+  /* right interval. Same thing on other end */
   /*-------------------- deal with extremal interval cases */
   if (aa-IntTol <= -1.0) {
     /*-------------------- left interval */
     thc = tha;
-    //--------------------  note: p(itv) == where to evaluate p to 
-    //                      obtain bar values.
+    /*--------------------  note: p(itv) == where to evaluate p to 
+                            obtain bar values. */
     nitv = 1;
     aa = -1.0;
-    gam = -1.0;               // set center for a
+    gam = -1.0;               /* set center for a */
   } else if (bb + IntTol >= 1.0) {
     /*-------------------- right interval */
     thc = thb;
     nitv   = 1;
     bb = 1;
-    gam = 1;               // set center for b 
+    gam = 1;               /* set center for b  */
   } else {
     /*-------------------- middle interval */
     itv[0] = aa;
@@ -428,11 +429,11 @@ int find_pol(double *intv, polparams *pol) {
   } else {
     /*-------------------- give a starting degree - around 1/(half gap) */
     min_deg = 2 + (int) 0.5/(bb-aa);
-    // min_deg = max(min_deg,2);
-    // min_deg = 2;
+    /* min_deg = max(min_deg,2); */
+    /* min_deg = 2; */
     thresh = pol->thresh_int;
-    //-------------------- this is a short-circuit for the 
-    //                     case of a forced degree 
+    /*-------------------- this is a short-circuit for the 
+                         case of a forced degree  */
     if (pol->deg > 0){
       thresh = -1;
       max_deg = pol->deg;
@@ -443,37 +444,37 @@ int find_pol(double *intv, polparams *pol) {
     /*-------------------- DEGREE LOOP -------------------- */
     for (m=min_deg; m < max_deg;m++){
       dampcf(m, damping, jac);
-      //-------------------- update v: add one more entry
+      /*-------------------- update v: add one more entry */
       v[m] = cos(m*thb)-cos(m*tha);
-      //---------------------Balacing the interval + get new mu
+      /*---------------------Balacing the interval + get new mu */
       if (rootchb(m, v, jac, tha, thb, mu, &thc)) {
-      //-------------------- if m<0 degree is too low - skip
-        //printf("rootchb == 1, m = %d, [%.15e, %.15e], tha %e thb %e\n", 
-        //       m, aa, bb, tha, thb);
+      /*-------------------- if m<0 degree is too low - skip
+        printf("rootchb == 1, m = %d, [%.15e, %.15e], tha %e thb %e\n", 
+               m, aa, bb, tha, thb); */
         continue;
       }
-      //----------------------New center 
+      /*----------------------New center  */
       gam = cos(thc);
-      //-------------------- for scaling
+      /*-------------------- for scaling */
       chebxPltd(m, mu, 1, &gam, &t);
       chebxPltd(m, mu, nitv, itv, vals);
-      //-------------------- test for acceptance of this pol. 
-      //printf("mindeg=%d, m = %d, val %e %e, t %e, thresh %e\n", 
-      //       min_deg, m, vals[0], vals[1], t, thresh);
+      /*-------------------- test for acceptance of this pol. 
+        printf("mindeg=%d, m = %d, val %e %e, t %e, thresh %e\n", 
+               min_deg, m, vals[0], vals[1], t, thresh); */
       if (vals[0] <= t*thresh && vals[1] <= t*thresh) {
         m++;
         break;
       }
     }
     mbest = m - 1;
-    //-------------------- scale the polynomial
+    /*-------------------- scale the polynomial */
     for (j=0; j<=m; j++) 
       mu[j] /= t;
     pol->bar = min(vals[0], vals[1])/t;
     pol->gam = gam;
     pol->deg = mbest;
   }
-  //save_vec(pol->deg+1, mu, "OUT/mu.mtx");
+  /*save_vec(pol->deg+1, mu, "OUT/mu.mtx"); */
   free(v);
   free(jac);
   return 0;

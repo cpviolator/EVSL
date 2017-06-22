@@ -22,7 +22,7 @@
  * @brief Defs for blaslapack routines
  */
 
-// Fortran logical type
+/* Fortran logical type */
 typedef int logical;
 
 void DCOPY(int *n, double *dx, int *incx, double *dy, int *incy);

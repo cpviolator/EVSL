@@ -10,8 +10,8 @@
  * @file dumps.c
  * @brief Miscellaneous functions used for DOS based functions
  */
-//-------------------- miscellaneous functions for I/O 
-//                     and for debugging 
+/*-------------------- miscellaneous functions for I/O 
+                       and for debugging  */
 
 void save_mtx_basic(int nrow, int ncol, int *ia, 
                     int *ja, double *a, const char *fn) {

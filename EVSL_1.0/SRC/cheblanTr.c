@@ -66,7 +66,7 @@ int ChebLanTr(int lanm, int nev, double *intv, int maxit,
   const int ifGenEv = evsldata.ifGenEv;
   /*-------------------- for stats */
   double tall=0.0;
-  //double tolP = tol;
+  /*double tolP = tol; */
   double tr, last_tr;
   tall = cheblan_timer();
   int do_print = 1;
@@ -88,7 +88,7 @@ int ChebLanTr(int lanm, int nev, double *intv, int maxit,
   double nevInc = 0.2;   /* add 1  + 20% each time it is needed */
   /*-------------------- if we have at least nev/ev_frac good candidate 
                          eigenvalues from p(A) == then we restart to lock them in */
-  //int evFrac = 2;
+  /*int evFrac = 2; */
   /*--------------------   some constants frequently used */
   /* char cT='T'; */
   char cN = 'N';
@@ -112,7 +112,7 @@ int ChebLanTr(int lanm, int nev, double *intv, int maxit,
   /*-------------------- Assumption: polynomial pol computed before calling cheblanTr
                          pol.  approximates the delta function centered at 'gamB'
                          bar: a bar value to threshold Ritz values of p(A) */
-  //int deg = pol->deg;
+  /*int deg = pol->deg; */
   double gamB=pol->gam, bar=pol->bar;
   /*-------------------- gamB must be within [-1, 1] */
   if (gamB > 1.0 || gamB < -1.0) {
@@ -487,30 +487,31 @@ int ChebLanTr(int lanm, int nev, double *intv, int maxit,
     } /* while (k<mlan) loop */
 
     
-    //SymEigenSolver(k, T, lanm1, EvecT, lanm1, Rval);
-    //savedensemat(T, lanm1, k, k, "T.txt");
-    //savedensemat(EvecT, lanm1, k, k, "Evec.txt");
-    //save_vec(k, Rval, "eval.txt");
+    /*SymEigenSolver(k, T, lanm1, EvecT, lanm1, Rval); */
+    /*savedensemat(T, lanm1, k, k, "T.txt"); */
+    /*savedensemat(EvecT, lanm1, k, k, "Evec.txt"); */
+    /*save_vec(k, Rval, "eval.txt"); */
     /*--------------------   TWO passes to select good candidates */
     /*                       Pass-1: based on if ``p(Ritzvalue) > bar'' */	    
     jl = 0;
     for (i=0; i<k; i++) {
-      //printf("resi[%d] = %.15e\n", i, fabs(beta*EvecT[i*lanm1+(k-1)]));
+      /*printf("resi[%d] = %.15e\n", i, fabs(beta*EvecT[i*lanm1+(k-1)])); */
       /*--------------------   if this Ritz value is higher than ``bar'' */
       if (Rval[i] >= bar) {
         /* move good eigenvectors/vals to front */
         if (i != jl) {
           DCOPY(&k, EvecT+i*lanm1, &one, EvecT+jl*lanm1, &one);
           Rval[jl] = Rval[i];
-          //resi[jl] = resi[i];
+          /*resi[jl] = resi[i]; */
         }
         resi[jl] = fabs(beta*EvecT[i*lanm1+(k-1)]);
-        //printf("beta = %.15e, resi[%d] = %.15e\n", beta, i, resi[jl]);
+        /*printf("beta = %.15e, resi[%d] = %.15e\n", beta, i, resi[jl]);
+         * */
         jl++;
       }
     }
-    //exit(0);
-    //fprintf(fstats, "beta = %.1e\n", beta);
+    /*exit(0); */
+    /*fprintf(fstats, "beta = %.1e\n", beta); */
     /*---------------------- Compute the Ritz vectors: 
      *                       Rvec(:,1:jl) = V(:,1:k) * EvecT(:,1:jl) */
     DGEMM(&cN, &cN, &n, &jl, &k, &done, V, &n, EvecT, &lanm1, &dzero, Rvec, &n);
@@ -568,8 +569,8 @@ int ChebLanTr(int lanm, int nev, double *intv, int maxit,
           /* res0 = 2-norm of w */
           res0 = DNRM2(&n, w, &one);
           /* res0 = B-norm of w */
-          //matvec_B(w, w2);
-          //resB0 = sqrt(DDOT(&n, w, &one, w2, &one));
+          /*matvec_B(w, w2); */
+          /*resB0 = sqrt(DDOT(&n, w, &one, w2, &one)); */
         } else {
           /*-------------------- w = w - t3*y, (w=A*y-t3*y) */
           DAXPY(&n, &nt3, y, &one, w, &one);
@@ -579,10 +580,10 @@ int ChebLanTr(int lanm, int nev, double *intv, int maxit,
         /*-------------------- test res. of this Ritz pair against tol */
         /* r = resi[i];*/
         r = res0;
-        //fprintf(fstats, "!!! res norm: P: %.15e, 2: %.15e, B: %.15e\n", 
-        //        resi[i], r, resB0);
+        /*fprintf(fstats, "!!! res norm: P: %.15e, 2: %.15e, B: %.15e\n", 
+                resi[i], r, resB0); */
         if (r < tol) {
-          //-------------------- check if need to realloc
+          /*-------------------- check if need to realloc */
           if (lock >= nev){
             nev += 1 + (int) (nev*nevInc);
             if (do_print) {

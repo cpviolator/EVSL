@@ -29,7 +29,7 @@ void randn_double(int n, double *v) {
     for(i = 0; i < n; i++) {
             static double Z0;
             static double Z1;
-            static int regen = 0;//A boolean
+            static int regen = 0;/*A boolean */
             regen = !regen;
             if(!regen)
             {
@@ -55,7 +55,7 @@ void linspace(double a, double b, int num, double *arr){
   double h;
   h = (num==1? 0: (b-a)/(num-1));
   int i;
- //-------------------- careful at the boundaries!
+ /*-------------------- careful at the boundaries! */
   arr[0] = a;
   arr[num-1] = b;
   for (i=1; i<num-1; i++)

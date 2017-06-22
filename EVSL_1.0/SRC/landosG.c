@@ -6,7 +6,7 @@
 #include "def.h"
 #include "evsl.h"
 #include "internal_proto.h"
-#include "string.h"  //for memset
+#include "string.h"  /*for memset */
 #include "struct.h"
 
 /**
@@ -45,12 +45,11 @@
 int LanDosG(const int nvec, const int msteps, const int degB, int npts,
             double *xdos, double *ydos, double *neig, const double *const intv,
             const double tau) {
-  //--------------------
 
-  int maxit = msteps, m;  // Max number of iteratios
+  int maxit = msteps, m;  /* Max number of iteratios*/
   int n = evsldata.n;
 
-  // double tall;
+  /* double tall;*/
 
   const int ifGenEv = evsldata.ifGenEv;
 
@@ -86,8 +85,8 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
   Malloc(ind, npts, int);
   double *y;
   Calloc(y, npts, double);
-  //-------------------- to report timings/
-  // tall = cheblan_timer();
+  /*-------------------- to report timings*/
+  /* tall = cheblan_timer();*/
   int i, j, k;
 
   /*--------------------   frequently used constants  */
@@ -113,8 +112,8 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
   Malloc(dT, maxit, double);
   Malloc(eT, maxit, double);
   double *EvalT, *EvecT;
-  Malloc(EvalT, maxit, double);          // eigenvalues of tridia. matrix  T
-  Malloc(EvecT, maxit * maxit, double);  // Eigen vectors of T
+  Malloc(EvalT, maxit, double);    /* eigenvalues of tridia. matrix  T*/
+  Malloc(EvecT, maxit * maxit, double);  /* Eigen vectors of T*/
   const double lm = intv[0];
   const double lM = intv[1];
   const double aa = max(intv[0], intv[2]);
@@ -124,10 +123,10 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
   const double H = (lM - lm) / (M - 1);
   const double sigma = H / sqrt(8 * log(kappa));
   const double sigma2 = 2 * sigma * sigma;
-  //-------------------- If gaussian small than tol ignore point.
+  /*-------------------- If gaussian small than tol ignore point.*/
   const double tol = 1e-08;
   double width = sigma * sqrt(-2.0 * log(tol));
-  linspace(aa, bb, npts, xdos);  // xdos = linspace(lm,lM, npts);
+  linspace(aa, bb, npts, xdos);  /* xdos = linspace(lm,lM, npts);*/
   /*-------------------- u  is just a pointer. wk == work space */
   double *wk, *vrand = NULL;
   const int wk_size = ifGenEv ? 6 * n : 4 * n;
@@ -148,7 +147,7 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
       DSCAL(&n, &t, Z, &one);
     } else {
       /* 2-norm */
-      t = 1.0 / DNRM2(&n, vinit, &one);  // add a test here.
+      t = 1.0 / DNRM2(&n, vinit, &one);  /* add a test here.*/
       DCOPY(&n, vinit, &one, V, &one);
     }
     /* unit B^{-1}-norm or 2-norm */
@@ -162,7 +161,7 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
     double *v, *vnew;
     /*--------------------  Lanczos recurrence coefficients */
     double alpha, nalpha, beta = 0.0, nbeta;
-    // ---------------- main Lanczos loop
+    /* ---------------- main Lanczos loop*/
     for (k = 0; k < maxit; k++) {
       /*-------------------- quick reference to Z(:,k-1) when k>0*/
       zold = k > 0 ? Z + (k - 1) * n : NULL;
@@ -199,7 +198,7 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
           exit(-1);
         } else {
           pnav(pol_sol.mu, pol_sol.deg, pol_sol.cc, pol_sol.dd, znew, vnew,
-               wk);  // Ish
+               wk);  
         }
         /*-------------------- beta = (vnew, znew)^{1/2} */
         beta = sqrt(DDOT(&n, vnew, &one, znew, &one));
@@ -248,17 +247,17 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
     }
     SymmTridEig(EvalT, EvecT, maxit, dT, eT);
     for (i = 0; i < maxit; i++) {
-      //-------------------- weights for Lanczos quadrature
-      // Gamma2(i) = elementwise square of top entry of i-th eginvector
+      /*-------------------- weights for Lanczos quadrature
+       Gamma2(i) = elementwise square of top entry of i-th eginvector*/
       gamma2[i] = EvecT[i * maxit] * EvecT[i * maxit];
     }
-    //-------------------- dos curve parameters
-    // Generate DOS from small gaussians centered at the ritz values
+    /*-------------------- dos curve parameters*/
+    /* Generate DOS from small gaussians centered at the ritz values*/
     for (i = 0; i < msteps; i++) {
-      // As msteps is width of ritzVal -> we get msteps eigenvectors
+      /* As msteps is width of ritzVal -> we get msteps eigenvectors*/
       const double t = EvalT[i];
       int numPlaced = 0;
-      //-------------------- Place elements close to t in ind
+      /*-------------------- Place elements close to t in ind */
       for (j = 0; j < npts; j++) {
         if (abs(xdos[j] - t) < width) ind[numPlaced++] = j;
       }
@@ -268,7 +267,7 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
     }
   }
   double scaling = 1.0 / (nvec * sqrt(sigma2 * PI));
-  // y = ydos * scaling
+  /* y = ydos * scaling*/
   DSCAL(&npts, &scaling, y, &one);
   DCOPY(&npts, y, &one, ydos, &one);
   simpson(xdos, y, npts);
@@ -293,7 +292,7 @@ int LanDosG(const int nvec, const int msteps, const int degB, int npts,
     free_pol(&pol_sol);
   }
   /*-------------------- record stats */
-  // tall = cheblan_timer() - tall;
+  /* tall = cheblan_timer() - tall;*/
   /*-------------------- print stat */
 
   return 0;

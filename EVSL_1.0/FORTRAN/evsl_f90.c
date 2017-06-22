@@ -142,7 +142,7 @@ void EVSLFORT(evsl_lanbounds)(int *nsteps, double *lmin, double *lmax) {
   Malloc(vinit, n, double);
   rand_double(n, vinit);
   LanTrbounds(50, *nsteps, 1e-10, vinit, 1, lmin, lmax, NULL);
-  //LanBounds(*nsteps, vinit, lmin, lmax);
+  /*LanBounds(*nsteps, vinit, lmin, lmax);*/
   free(vinit);
 }
 

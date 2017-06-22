@@ -343,16 +343,17 @@ int scaleweigthts(int n, double a, double b, complex double *zk, int* mulp,
  * @brief Sets default values for ratparams struct
  * */
 void set_ratf_def(ratparams *rat) {
-  // -------------------- this sets default values for ratparams struct.
-  rat->num = 1;            // number of the poles
-  rat->pw = 2;             // default multplicity of each pole
-  rat->method = 1;         // using poles from mid-point rule
-  rat->beta = 0.01;        // beta in LS approximation
-  rat->bar  = 0.5;         // this is fixed for rational filter  
-  rat->aa =  -1.0;         // left endpoint of interval
-  rat->bb = 1.0;           // right endpoint of interval 
-  //rat->cc = 0.0;           // center of interval
-  //rat->dd = 1.0;           // width of interval
+  /* -------------------- this sets default values for ratparams
+   * struct.*/
+  rat->num = 1;            /* number of the poles*/
+  rat->pw = 2;             /* default multplicity of each pole*/
+  rat->method = 1;         /* using poles from mid-point rule*/
+  rat->beta = 0.01;        /* beta in LS approximation*/
+  rat->bar  = 0.5;         /* this is fixed for rational filter  */
+  rat->aa =  -1.0;         /* left endpoint of interval*/
+  rat->bb = 1.0;           /* right endpoint of interval */
+  /*rat->cc = 0.0;            center of interval*/
+  /*rat->dd = 1.0;            width of interval*/
 }
 
 /**----------------------------------------------------------------------
@@ -373,24 +374,24 @@ void set_ratf_def(ratparams *rat) {
  *
  *--------------------------------------------------------------------*/
 int find_ratf(double *intv, ratparams *rat) {
-  complex double *omega; // weights of the poles
-  complex double *zk;    // location of the poles
-  int *mulp;             // multiplicity of the each pole
+  complex double *omega; /* weights of the poles */
+  complex double *zk;    /* location of the poles */
+  int *mulp;             /* multiplicity of the each pole */
   int n = rat->num, i, pow = 0, pw = rat->pw, method = rat->method;
   double beta = rat->beta;
   /*-------------------- A few parameters to be set or reset */
   Malloc(mulp, n, int);
   Malloc(zk, n, complex double);
-  for (i=0; i<n; i++) { // set the multiplicity of each pole
+  for (i=0; i<n; i++) { /* set the multiplicity of each pole */
     mulp[i] = pw;
     pow += mulp[i];
   }
   rat->zk = zk;
   rat->mulp = mulp;
-  rat->pow = pow; // total multiplicity of the poles
+  rat->pow = pow; /* total multiplicity of the poles */
   Malloc(omega, pow, complex double);
   rat->omega = omega;
-  //-------------------- intervals related
+  /*-------------------- intervals related */
   if (check_intv(intv, stdout) < 0) {
     return -1;
   }
@@ -400,15 +401,15 @@ int find_ratf(double *intv, ratparams *rat) {
     fprintf(stdout, " warning [%s (%d)]: interval (%e, %e) is adjusted to (%e, %e)\n", 
 	    __FILE__, __LINE__, intv[0], intv[1], aa, bb);
   }
-  //double lmin = intv[2], lmax = intv[3];
+  /*double lmin = intv[2], lmax = intv[3]; */
   /*-------------------- */
   rat->aa = aa;
   rat->bb = bb; 
   /*-------------------- cc, rr: center and half-width of [aa, bb] */
-  //double cc = 0.5 * (aa + bb);
-  //double dd = 0.5 * (bb - aa);
-  //rat->cc = cc;
-  //rat->dd = dd;
+  /*double cc = 0.5 * (aa + bb);
+    double dd = 0.5 * (bb - aa);
+    rat->cc = cc;
+    rat->dd = dd; */
   /*------------ compute the location of the poles */
   contQuad(method, n, zk);
   /*------------ compute expansion coefficients of rational filter on [-1, 1] */
