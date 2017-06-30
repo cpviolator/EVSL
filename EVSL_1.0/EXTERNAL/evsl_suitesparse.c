@@ -42,7 +42,7 @@ cholmod_sparse* csrMat_to_cholmod_sparse(csrMat *A, int stype) {
   /* long int version, allocate memory and copy ia, ja */
   Malloc(B->p, B->nrow+1, SuiteSparse_long);
   Malloc(B->i, B->nzmax, SuiteSparse_long);
-  int i;
+  long unsigned int i;
   for (i=0; i<B->nrow+1; i++) {
     SuiteSparse_long *ptr = (SuiteSparse_long *) B->p;
     ptr[i] = A->ia[i];
@@ -245,6 +245,7 @@ void LTSolDirect(double *b, double *x, void *data) {
  *------------------------------------------------------------------*/
 void ASIGMABSolDirect(int n, double *br, double *bi, double *xr, 
                       double *xz, void *data) {
+  (void) n;
   void* Numeric = data;
   double Control[UMFPACK_CONTROL]; 
   umfpack_zl_defaults(Control);

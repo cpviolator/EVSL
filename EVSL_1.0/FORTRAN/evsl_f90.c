@@ -97,7 +97,7 @@ void EVSLFORT(evsl_setb_csr)(uintptr_t *Bf90) {
  * @param[in] func : function pointer 
  * @param[in] data : associated data
  */
-void EVSLFORT(evsl_setamv)(int *n, void *func, void *data) {
+void EVSLFORT(evsl_setamv)(int *n, MVFunc func, void *data) {
   SetAMatvec(*n, (MVFunc) func, data);
 }
 
@@ -106,7 +106,7 @@ void EVSLFORT(evsl_setamv)(int *n, void *func, void *data) {
  * @param[in] func : function pointer 
  * @param[in] data : associated data
  */
-void EVSLFORT(evsl_setbmv)(int *n, void *func, void *data) {
+void EVSLFORT(evsl_setbmv)(int *n, MVFunc func, void *data) {
   SetBMatvec(*n, (MVFunc) func, data);
 }
 
@@ -114,7 +114,7 @@ void EVSLFORT(evsl_setbmv)(int *n, void *func, void *data) {
  * @param[in] func: func pointer of Bsol
  * @param[in] data: data pointer of Bsol
  */
-void EVSLFORT(evsl_setbsol)(void *func, void *data) {
+void EVSLFORT(evsl_setbsol)(MVFunc func, void *data) {
   SetBSol((SolFuncR) func, data);
 }
 
@@ -122,7 +122,7 @@ void EVSLFORT(evsl_setbsol)(void *func, void *data) {
  * @param[in] func: func pointer of LTsol
  * @param[in] data: data pointer of LTsol
  */
-void EVSLFORT(evsl_setltsol)(void *func, void *data) {
+void EVSLFORT(evsl_setltsol)(SolFuncR func, void *data) {
   SetLTSol((SolFuncR) func, data);
 }
 

@@ -36,7 +36,7 @@ typedef struct _ASBSolDataDirect {
 
 
 /* true for off-diagonal entries */
-static int dropdiag_di (int i, int j, double aij, void *other) { return (i != j) ;}
+static int dropdiag_di (int i, int j, double aij, void *other) { (void)(aij); (void)(other); return (i != j) ;}
 
 /* C = A + triu(A,1)' */
 static cs_di *make_sym_di (cs_di *A)
