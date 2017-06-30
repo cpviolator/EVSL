@@ -4,7 +4,20 @@
 #include "def.h"
 #include "struct.h"
 #include "internal_proto.h"
-#include "evsl_suitesparse.h"
+#include "cholmod.h"
+#include "umfpack.h"
+#include "evsl_direct.h"
+
+#ifdef CHOLMOD_USE_LONG
+#define CHOLMOD(name) cholmod_l_ ## name
+#else
+#define CHOLMOD(name) cholmod_ ## name
+#endif
+
+typedef struct _BSolDataDirect {
+  cholmod_factor *LB;
+  cholmod_common cm;
+} BSolDataDirect;
 
 /** @file evsl_suitesparse.c
  *  @brief Default solver function for solving shifted systems and factoring B
@@ -14,151 +27,6 @@
  *  The default solvers are UMFPACK and CHOLMOD from SuiteSparse
  *
  */
-
-/**
- * @brief default complex linear solver routine passed to evsl
- * 
- * @param n       size of the system
- * @param br,bi   vectors of length n, complex right-hand side (real and imaginary)
- * @param data    all data that are needed for solving the system
- * 
- * @param[out] xr,xz     vectors of length n, complex solution (real and imaginary)
- *
- * @warning: This function MUST be of this prototype
- *
- *------------------------------------------------------------------*/
-void ASIGMABSolSuiteSparse(int n, double *br, double *bi, double *xr, 
-                           double *xz, void *data) {
-  void* Numeric = data;
-  double Control[UMFPACK_CONTROL]; 
-  umfpack_zl_defaults(Control);
-  Control[UMFPACK_IRSTEP] = 0; /* no iterative refinement for umfpack*/
-  umfpack_zl_solve(UMFPACK_A, NULL, NULL, NULL, NULL, xr, xz, br, bi, 
-                   Numeric, Control, NULL);
-}
-
-/** @brief setup the default solver for A - SIGMA B 
- *
- * The setup invovles shifting the matrix A - SIGMA B and factorizing 
- * the shifted matrix 
- * The solver function and the data will be saved data
- * Generally speaking, each pole can have a different solver 
- *
- * @param A        matrix A
- * @param BB       matrix B, if NULL, it means B is identity
- * @param num      the number of SIGMA's
- * @param zk       array of SIGMA's of length num
- * @param data    all data that are needed for solving the system
- * */
-int SetupASIGMABSolSuiteSparse(csrMat *A, csrMat *BB, int num,
-                               complex double *zk, void **data) {
-  int i, j, nrow, ncol, nnzB, nnzC, *map, status;
-  csrMat *B, C, eye;
-  /* UMFPACK matrix for the shifted matrix 
-   * C = A - s * B */
-  SuiteSparse_long *Cp, *Ci;
-  double *Cx, *Cz, zkr1;
-  void *Symbolic=NULL, *Numeric=NULL;
-  
-  nrow = A->nrows;
-  ncol = A->ncols;
-
-  if (BB) {
-    B = BB;
-  } else {
-    /* if B==NULL, B=I, standard e.v. prob */
-    speye(nrow, &eye);
-    B = &eye;
-  }
-
-  nnzB = B->ia[nrow];
-  /* map from nnz in B to nnz in C, useful for multi-poles */
-  Malloc(map, nnzB, int);
-  /* NOTE: SuiteSparse requires that the matrix entries be sorted.
-   * The matadd routine will  guarantee this
-   * C = A + 0.0 * B 
-   * This actually computes the pattern of A + B
-   * and also can guarantee C has sorted rows 
-   * map is the mapping from nnzB to nnzC */
-  matadd(1.0, 0.0, A, B, &C, NULL, map);
-
-  nnzC = C.ia[nrow];
-  /* malloc and copy to SuiteSparse matrix */
-  Malloc(Cp, nrow+1, SuiteSparse_long);
-  Malloc(Ci, nnzC, SuiteSparse_long);
-  Calloc(Cz, nnzC, double);
-  for (i=0; i<nrow+1; i++) {
-    Cp[i] = C.ia[i];
-  }
-  for (i=0; i<nnzC; i++) {
-    Ci[i] = C.ja[i];
-  }
-  Cx = C.a;
-  /* pole loop
-   * for each pole we shift with B and factorize */
-  zkr1 = 0.0;
-  for (i=0; i<num; i++) {
-    /* the complex shift for pole i */
-    double zkr = creal(zk[i]);
-    double zkc = cimag(zk[i]);
-
-    /* shift B*/
-    for (j=0; j<nnzB; j++) {
-      int p = map[j];
-      double v = B->a[j];
-      CHKERR(Ci[p] != B->ja[j]);
-      Cx[p] -= (zkr - zkr1) * v;
-      Cz[p] = -zkc * v;
-    }
-
-    /* only do symbolic factorization once */
-    if (i==0) {
-      /* Symbolic Factorization */
-      status = umfpack_zl_symbolic(nrow, ncol, Cp, Ci, Cx, Cz, &Symbolic, 
-                                   NULL, NULL);
-      if (status < 0) {
-        printf("umfpack_zl_symbolic failed, %d\n", status);
-        return 1;
-      }
-    }
-    /* Numerical Factorization */
-    status = umfpack_zl_numeric(Cp, Ci, Cx, Cz, Symbolic, &Numeric, NULL, NULL);
-    if (status < 0) {
-      printf("umfpack_zl_numeric failed and exit, %d\n", status);
-      return 1;
-    }
-    /* save the data */
-    data[i] = Numeric;
-    /* for the next shift */
-    zkr1 = zkr;
-  } /* for (i=...)*/
-  
-  /* free the symbolic fact */
-  if (Symbolic) {
-    umfpack_zl_free_symbolic(&Symbolic);
-  }
-
-  free(map);
-  free(Cp);
-  free(Ci);
-  free(Cz);
-  free_csr(&C);
-  if (!BB) {
-    free_csr(&eye);
-  }
-
-  return 0;
-}
-
-/**
- * @brief free the data needed by UMFpack
- */ 
-void FreeASIGMABSolSuiteSparse(int num, void **data) {
-  int i;
-  for (i=0; i<num; i++) {
-    umfpack_zl_free_numeric(&data[i]);
-  }
-}
 
 /**
  * @brief Create cholmod_sparse matrix just as a wrapper of a csrMat
@@ -248,16 +116,16 @@ cholmod_dense cholmod_X, cholmod_B, *cholmod_Y=NULL, *cholmod_E=NULL,
 /** @brief Solver function of B
  *
  * */
-void BSolSuiteSparse(double *b, double *x, void *data) {
-  /*int n;*/
+void BSolDirect(double *b, double *x, void *data) {
+  //int n;
 
-  BSolDataSuiteSparse *Bsol_data = (BSolDataSuiteSparse *) data;
+  BSolDataDirect *Bsol_data = (BSolDataDirect *) data;
   cholmod_factor *LB;
   cholmod_common *cc;
 
   LB = Bsol_data->LB;
   cc = &Bsol_data->cm;
-  /*n = LB->n;*/
+  //n = LB->n;
 
   /* give the wrapper data */
   cholmod_X.x = x;
@@ -274,7 +142,9 @@ void BSolSuiteSparse(double *b, double *x, void *data) {
  * @param B         matrix B
  * @param Bsol_data Struct which will be initialized 
  * */
-int SetupBSolSuiteSparse(csrMat *B, BSolDataSuiteSparse *Bsol_data) {
+int SetupBSolDirect(csrMat *B, void **data) {
+  BSolDataDirect *Bsol_data;
+  Malloc(Bsol_data, 1, BSolDataDirect);
   cholmod_sparse *Bcholmod;
   cholmod_common *cc = &Bsol_data->cm;
   cholmod_factor *LB;
@@ -291,13 +161,13 @@ int SetupBSolSuiteSparse(csrMat *B, BSolDataSuiteSparse *Bsol_data) {
   CHOLMOD(check_common)(cc);
   CHOLMOD(check_sparse)(Bcholmod, cc);
   /* symbolic and numeric fact */
-  /*printf("start analysis\n");*/
+  //printf("start analysis\n");
   LB = CHOLMOD(analyze)(Bcholmod, cc);
   CHOLMOD(check_common)(cc);
-  /* printf("cc status %d\n", cc->status); */
-  /* printf("start factorization\n"); */
+  //printf("cc status %d\n", cc->status);
+  //printf("start factorization\n");
   CHOLMOD(factorize)(Bcholmod, LB, cc);
-  /* printf("done factorization\n"); */
+  //printf("done factorization\n");
   /* check the factor */
   CHOLMOD(check_factor)(LB, cc);
   /* save the struct to global variable */
@@ -317,10 +187,13 @@ int SetupBSolSuiteSparse(csrMat *B, BSolDataSuiteSparse *Bsol_data) {
   arr_to_cholmod_dense(n, 1, NULL, &cholmod_X);
   arr_to_cholmod_dense(n, 1, NULL, &cholmod_B);
 
+  *data = (void *) Bsol_data;
+
   return 0;
 }
 
-int FreeBSolSuiteSparseData(BSolDataSuiteSparse *data) {
+void FreeBSolDirectData(void *vdata) {
+  BSolDataDirect *data = (BSolDataDirect *) vdata;
   cholmod_common *cc = &data->cm;
   /* free the factor */
   CHOLMOD(free_factor)(&data->LB, cc);
@@ -330,22 +203,22 @@ int FreeBSolSuiteSparseData(BSolDataSuiteSparse *data) {
   CHOLMOD(free_dense)(&cholmod_W, cc);
   /* finish cholmod */
   CHOLMOD(finish)(cc);
-  return 0;
+  free(vdata);
 }
 
 /** @brief Solver function of L^{T} 
  *  x = L^{-T}*b
  * */
-void LTSolSuiteSparse(double *b, double *x, void *data) {
-  /* int n; */
+void LTSolDirect(double *b, double *x, void *data) {
+  //int n;
 
-  BSolDataSuiteSparse *Bsol_data = (BSolDataSuiteSparse *) data;
+  BSolDataDirect *Bsol_data = (BSolDataDirect *) data;
   cholmod_factor *LB;
   cholmod_common *cc;
 
   LB = Bsol_data->LB;
   cc = &Bsol_data->cm;
-  /* n = LB->n; */
+  //n = LB->n;
   
   /* XXX are these always safe ? */
   cholmod_B.x = b;
@@ -356,5 +229,150 @@ void LTSolSuiteSparse(double *b, double *x, void *data) {
   cholmod_dense *cholmod_Xp = &cholmod_X;
   CHOLMOD(solve2)(CHOLMOD_Pt, LB, cholmod_W, NULL, 
                   &cholmod_Xp, NULL, &cholmod_Y, &cholmod_E, cc);
+}
+
+/**
+ * @brief default complex linear solver routine passed to evsl
+ * 
+ * @param n       size of the system
+ * @param br,bi   vectors of length n, complex right-hand side (real and imaginary)
+ * @param data    all data that are needed for solving the system
+ * 
+ * @param[out] xr,xz     vectors of length n, complex solution (real and imaginary)
+ *
+ * @warning: This function MUST be of this prototype
+ *
+ *------------------------------------------------------------------*/
+void ASIGMABSolDirect(int n, double *br, double *bi, double *xr, 
+                      double *xz, void *data) {
+  void* Numeric = data;
+  double Control[UMFPACK_CONTROL]; 
+  umfpack_zl_defaults(Control);
+  Control[UMFPACK_IRSTEP] = 0; // no iterative refinement for umfpack
+  umfpack_zl_solve(UMFPACK_A, NULL, NULL, NULL, NULL, xr, xz, br, bi, 
+                   Numeric, Control, NULL);
+}
+
+/** @brief setup the default solver for A - SIGMA B 
+ *
+ * The setup invovles shifting the matrix A - SIGMA B and factorizing 
+ * the shifted matrix 
+ * The solver function and the data will be saved data
+ * Generally speaking, each pole can have a different solver 
+ *
+ * @param A        matrix A
+ * @param BB       matrix B, if NULL, it means B is identity
+ * @param num      the number of SIGMA's
+ * @param zk       array of SIGMA's of length num
+ * @param data    all data that are needed for solving the system
+ * */
+int SetupASIGMABSolDirect(csrMat *A, csrMat *BB, int num,
+                          complex double *zk, void **data) {
+  int i, j, nrow, ncol, nnzB, nnzC, *map, status;
+  csrMat *B, C, eye;
+  /* UMFPACK matrix for the shifted matrix 
+   * C = A - s * B */
+  SuiteSparse_long *Cp, *Ci;
+  double *Cx, *Cz, zkr1;
+  void *Symbolic=NULL, *Numeric=NULL;
+  
+  nrow = A->nrows;
+  ncol = A->ncols;
+
+  if (BB) {
+    B = BB;
+  } else {
+    /* if B==NULL, B=I, standard e.v. prob */
+    speye(nrow, &eye);
+    B = &eye;
+  }
+
+  nnzB = B->ia[nrow];
+  /* map from nnz in B to nnz in C, useful for multi-poles */
+  Malloc(map, nnzB, int);
+  /* NOTE: SuiteSparse requires that the matrix entries be sorted.
+   * The matadd routine will  guarantee this
+   * C = A + 0.0 * B 
+   * This actually computes the pattern of A + B
+   * and also can guarantee C has sorted rows 
+   * map is the mapping from nnzB to nnzC */
+  matadd(1.0, 0.0, A, B, &C, NULL, map);
+
+  nnzC = C.ia[nrow];
+  /* malloc and copy to SuiteSparse matrix */
+  Malloc(Cp, nrow+1, SuiteSparse_long);
+  Malloc(Ci, nnzC, SuiteSparse_long);
+  Calloc(Cz, nnzC, double);
+  for (i=0; i<nrow+1; i++) {
+    Cp[i] = C.ia[i];
+  }
+  for (i=0; i<nnzC; i++) {
+    Ci[i] = C.ja[i];
+  }
+  Cx = C.a;
+  /* pole loop
+   * for each pole we shift with B and factorize */
+  zkr1 = 0.0;
+  for (i=0; i<num; i++) {
+    /* the complex shift for pole i */
+    double zkr = creal(zk[i]);
+    double zkc = cimag(zk[i]);
+
+    // shift B
+    for (j=0; j<nnzB; j++) {
+      int p = map[j];
+      double v = B->a[j];
+      CHKERR(Ci[p] != B->ja[j]);
+      Cx[p] -= (zkr - zkr1) * v;
+      Cz[p] = -zkc * v;
+    }
+
+    /* only do symbolic factorization once */
+    if (i==0) {
+      /* Symbolic Factorization */
+      status = umfpack_zl_symbolic(nrow, ncol, Cp, Ci, Cx, Cz, &Symbolic, 
+                                   NULL, NULL);
+      if (status < 0) {
+        printf("umfpack_zl_symbolic failed, %d\n", status);
+        return 1;
+      }
+    }
+    /* Numerical Factorization */
+    status = umfpack_zl_numeric(Cp, Ci, Cx, Cz, Symbolic, &Numeric, NULL, NULL);
+    if (status < 0) {
+      printf("umfpack_zl_numeric failed and exit, %d\n", status);
+      return 1;
+    }
+    /* save the data */
+    data[i] = Numeric;
+    /* for the next shift */
+    zkr1 = zkr;
+  } /* for (i=...)*/
+  
+  /* free the symbolic fact */
+  if (Symbolic) {
+    umfpack_zl_free_symbolic(&Symbolic);
+  }
+
+  free(map);
+  free(Cp);
+  free(Ci);
+  free(Cz);
+  free_csr(&C);
+  if (!BB) {
+    free_csr(&eye);
+  }
+
+  return 0;
+}
+
+/**
+ * @brief free the data needed by UMFpack
+ */ 
+void FreeASIGMABSolDirect(int num, void **data) {
+  int i;
+  for (i=0; i<num; i++) {
+    umfpack_zl_free_numeric(&data[i]);
+  }
 }
 

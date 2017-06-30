@@ -19,15 +19,15 @@
 /**-----------------------------------------------------------------------
  *  @brief Chebyshev polynomial filtering Lanczos process [NON-restarted version]
  *
- *  @param intv     An array of length 4 \n
+ *  @param[in] intv     An array of length 4 \n
  *          [intv[0], intv[1]] is the interval of desired eigenvalues \n
  *          [intv[2], intv[3]] is the global interval of all eigenvalues \n
  *          Must contain all eigenvalues of A
  *  
- *  @param maxit    Max number of outer Lanczos steps  allowed --[max dim of Krylov 
+ *  @param[in] maxit    Max number of outer Lanczos steps  allowed --[max dim of Krylov 
  *          subspace]
  *  
- *  @param tol       
+ *  @param[in] tol       
  *          Tolerance for convergence. The code uses a stopping criterion based
  *          on the convergence of the restricted trace. i.e., the sum of the
  *          eigenvalues of T_k that  are in the desired interval. This test  is
@@ -37,9 +37,9 @@
  *          - *but* the actual residual norm associated with the original
  *          matrix A is returned
  *  
- *  @param vinit  initial  vector for Lanczos -- [optional]
+ *  @param[in] vinit  initial  vector for Lanczos -- [optional]
  * 
- *  @param pol       A struct containing the parameters of the polynomial..
+ *  @param[in] pol       A struct containing the parameters of the polynomial..
  *  This is set up by a call to find_deg prior to calling chenlanNr 
  * 
  *  @b Modifies:
@@ -254,16 +254,19 @@ int ChebLanNr(double *intv, int maxit, double tol, double *vinit,
     /*-------------------- T(k+1,k) = alpha */
     eT[k] = beta;
     /*-------------------- Reallocate memory if maxit is smaller than # of eigs */    
-    if (k == maxit-1){
-      maxit += 1 + (int) (maxit*1.2);
+    if (k == maxit-1) {
+      maxit = 1 + (int) (maxit * 1.5);
       Realloc(V, (maxit+1)*n, double);
       if (ifGenEv) {
 	Realloc(Z, (maxit+1)*n, double);
+      } else {
+        /* make sure Z == V since V may be changed in the Realloc above */
+        Z = V;
       }
-      Realloc(dT, maxit, double);
-      Realloc(eT, maxit, double);
-      Realloc(Lam, maxit, double);
-      Realloc(res, maxit, double);    
+      Realloc(dT,    maxit, double);
+      Realloc(eT,    maxit, double);
+      Realloc(Lam,   maxit, double);
+      Realloc(res,   maxit, double);    
       Realloc(EvalT, maxit, double);
     }      
     /*---------------------- test for Ritz vectors */
@@ -303,7 +306,7 @@ int ChebLanNr(double *intv, int maxit, double tol, double *vinit,
     }
     /* -------------------- simple test because all eigenvalues
                             are between gamB and ~1. */
-    if (fabs(tr1-tr0) < tol*fabs(tr1)) {
+    if ( (fabs(tr1-tr0) < tol*fabs(tr1)) || (fabs(tr1)+fabs(tr0)<tol) ) {
       break;
     }
     tr0 = tr1;

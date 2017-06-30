@@ -1,5 +1,4 @@
-#include "evsl.h"
-#include "io.h"
+#include <errno.h>
 #include <fcntl.h>
 #include <math.h>
 #include <stdio.h>
@@ -7,19 +6,22 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <time.h>
 #include <unistd.h>
-
-#define BsolPol 1
+#include "evsl.h"
+#include "io.h"
 
 /*-------------------- protos */
 int exDOS(double *vals, int n, int npts, double *x, double *y, double *intv);
 int read_coo_MM(const char *matfile, int idxin, int idxout, cooMat *Acoo);
 int get_matrix_info(FILE *fmat, io_t *pio);
+int findarg(const char *argname, ARG_TYPE type, void *val, int argc,
+            char **argv);
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
-/*
+/**
  * Reads in a vector as an nx1 matrix.
  *
  * @parm[out] npts pointer to an int to store # of points
@@ -39,24 +41,26 @@ int readVec(const char *filename, int *npts, double **vec) {
   return 0;
 }
 
-/*
+/**
  *-----------------------------------------------------------------------
- * Tests landosG.c , the Lanczos DOS approximate for the general eigenvalue
+ * Tests landosG.c , the Lanczos DOS computed for the general eigenvalue
  * problem. Includes graphical comparison of calculated vs exact DOS
+ *
+ * use -graph_exact_dos 1 to enable graphing the exact DOS
  *-----------------------------------------------------------------------
  */
-int main() {
+int main(int argc, char *argv[]) {
   srand(time(NULL));
-  const int msteps = 30;   // Number of steps
-  const int degB = 40;     // Degree to aproximate B with
-  const int npts = 200;    // Number of points
-  const int nvec = 30;     // Number of random vectors to use
-  const double tau = 1e-4; // Tolerance in polynomial approximation
-  // ---------------- Intervals of interest
-  // intv[0] and intv[1] are the smallest and largest eigenvalues of (A,B)
-  // intv[2] and intv[3] are the input interval of interest [a. b]
-  // intv[4] and intv[5] are the smallest and largest eigenvalues of B after
-  // diagonal scaling
+  const int msteps = 30;   /* Number of steps */
+  const int degB = 40;     /* Degree to aproximate B with */
+  const int npts = 200;    /* Number of points */
+  const int nvec = 30;     /* Number of random vectors to use */
+  const double tau = 1e-4; /* Tolerance in polynomial approximation */
+  /* ---------------- Intervals of interest
+     intv[0] and intv[1] are the smallest and largest eigenvalues of (A,B)
+     intv[2] and intv[3] are the input interval of interest [a. b]
+     intv[4] and intv[5] are the smallest and largest eigenvalues of B after
+     diagonal scaling */
   double intv[6] = {-2.739543872224533e-13,
                     0.0325,
                     -2.739543872224533e-13,
@@ -66,8 +70,8 @@ int main() {
   int n = 0, i, nslices, ierr;
   double a, b;
 
-  cooMat Acoo, Bcoo; // A, B
-  csrMat Acsr, Bcsr; // A, B
+  cooMat Acoo, Bcoo; /* A, B */
+  csrMat Acsr, Bcsr; /* A, B */
   double *sqrtdiag = NULL;
 
   FILE *flog = stdout, *fmat = NULL;
@@ -75,6 +79,9 @@ int main() {
   io_t io;
   int numat, mat;
   char line[MAX_LINE];
+  int graph_exact_dos_tmp = 0;
+  findarg("graph_exact_dos", INT, &graph_exact_dos_tmp, argc, argv);
+  const int graph_exact_dos = graph_exact_dos_tmp;
   /*-------------------- start EVSL */
   EVSLStart();
   /*------------------ file "matfile" contains paths to matrices */
@@ -102,13 +109,14 @@ int main() {
     /*----------------input matrix and interval information -*/
     fprintf(flog, "MATRIX A: %s...\n", io.MatNam1);
     fprintf(flog, "MATRIX B: %s...\n", io.MatNam2);
-    a = io.a; // left endpoint of input interval
-    b = io.b; // right endpoint of input interval
+    a = io.a; /* left endpoint of input interval */
+    b = io.b; /* right endpoint of input interval */
     nslices = io.n_intv;
-    char path[1024]; // path to write the output files
-    strcpy(path, "OUT/MMPLanR_");
+    char path[1024]; /* path to write the output files */
+    strcpy(path, "OUT/LanDosG_");
     strcat(path, io.MatNam1);
-    fstats = fopen(path, "w"); // write all the output to the file io.MatNam
+    strcat(path, ".log");
+    fstats = fopen(path, "w"); /* write all the output to the file io.MatNam */
     if (!fstats) {
       printf(" failed in opening output file in OUT/\n");
       fstats = stdout;
@@ -123,15 +131,15 @@ int main() {
       ierr = read_coo_MM(io.Fname1, 1, 0, &Acoo);
       if (ierr == 0) {
         fprintf(fstats, "matrix read successfully\n");
-        // nnz = Acoo.nnz;
+        /* nnz = Acoo.nnz; */
         n = Acoo.nrows;
         if (n <= 0) {
           fprintf(stderr, "non-positive number of rows");
           exit(7);
         }
 
-        // printf("size of A is %d\n", n);
-        // printf("nnz of  A is %d\n", nnz);
+        /* printf("size of A is %d\n", n);
+           printf("nnz of  A is %d\n", nnz); */
       } else {
         fprintf(flog, "read_coo error for A = %d\n", ierr);
         exit(6);
@@ -142,10 +150,6 @@ int main() {
         if (Bcoo.nrows != n) {
           return 1;
         }
-        // nnz = Bcoo.nnz;
-        // n = Bcoo.nrows;
-        // printf("size of B is %d\n", n);
-        // printf("nnz of  B is %d\n", nnz);
       } else {
         fprintf(flog, "read_coo error for B = %d\n", ierr);
         exit(6);
@@ -154,7 +158,6 @@ int main() {
       sqrtdiag = (double *)calloc(n, sizeof(double));
       extractDiag(&Bcoo, sqrtdiag);
       diagScaling(&Acoo, &Bcoo, sqrtdiag);
-      // save_vec(n, diag, "OUT/diag.txt");
       /*-------------------- conversion from COO to CSR format */
       ierr = cooMat_to_csrMat(0, &Acoo, &Acsr);
       if (ierr) {
@@ -171,6 +174,9 @@ int main() {
       fprintf(flog, "HB FORMAT  not supported (yet) * \n");
       exit(7);
     }
+    /* Finish with input */
+
+    /* Start with actual driver */
     if (1) {
       /*----------------  compute the range of the spectrum of B */
       SetStdEig();
@@ -191,7 +197,6 @@ int main() {
       SetAMatrix(&Acsr);
       /*-------------------- set the right-hand side matrix B */
       SetBMatrix(&Bcsr);
-#if BsolPol
       /*-------------------- Use polynomial to solve B */
       BSolDataPol Bsol;
       Bsol.intv[0] = lmin;
@@ -200,14 +205,6 @@ int main() {
       (Bsol.pol_sol).max_deg = degB;
       SetupBSolPol(&Bcsr, &Bsol);
       SetBSol(BSolPol, (void *)&Bsol);
-#else
-      /*-------------------- Use Choleksy factorization to solve B */
-      BSolDataSuiteSparse Bsol;
-      /*-------------------- use SuiteSparse as the solver for B */
-      SetupBSolSuiteSparse(&Bcsr, &Bsol);
-      /*-------------------- set the solver for B */
-      SetBSol(BSolSuiteSparse, (void *)&Bsol);
-#endif
       SetGenEig();
       rand_double(n, vinit);
       ierr = LanTrbounds(40, 200, 1e-10, vinit, 1, &lmin, &lmax, fstats);
@@ -216,11 +213,7 @@ int main() {
         exit(10);
       }
       free(vinit);
-#if BsolPol
       FreeBSolPolData(&Bsol);
-#else
-      FreeBSolSuiteSparseData(&Bsol);
-#endif
       /*----------------- get the bounds for (A, B) ---------*/
       intv[0] = lmin;
       intv[1] = lmax;
@@ -234,76 +227,126 @@ int main() {
       SetBMatrix(&Bcsr);
       SetGenEig();
     }
-    // printf("%lf, %lf, %lf, %lf \n", lmin, lmax, intv[0], intv[1]);
-    //-------------------- Read in the eigenvalues
+    /*-------------------- Read in the eigenvalues */
     double *ev;
     int numev;
     readVec("NM1AB_eigenvalues.dat", &numev, &ev);
 
-    //-------------------- Define some constants to test with
-    //-------------------- reset to whole interval
     int ret;
     double neig;
-    //-------------------- exact histogram and computed DOS
-    double *xHist = (double *)calloc(npts, sizeof(double));
-    double *yHist = (double *)calloc(npts, sizeof(double));
-    double *xdos = (double *)calloc(npts, sizeof(double));
-    double *ydos = (double *)calloc(npts, sizeof(double));
-
-    // ------------------- Calculate the approximate DOS
+    double *xHist;
+    double *yHist;
+    /*-------------------- exact histogram and computed DOS */
+    if (graph_exact_dos) {
+      xHist = (double *)malloc(npts * sizeof(double));
+      yHist = (double *)malloc(npts * sizeof(double));
+    }
+    double *xdos = (double *)malloc(npts * sizeof(double));
+    double *ydos = (double *)malloc(npts * sizeof(double));
 
     double t0 = cheblan_timer();
+    /* ------------------- Calculate the computed DOS */
     ret = LanDosG(nvec, msteps, degB, npts, xdos, ydos, &neig, intv, tau);
     double t1 = cheblan_timer();
     fprintf(stdout, " LanDos ret %d  in %0.04fs\n", ret, t1 - t0);
 
-    // -------------------- Calculate the exact DOS
-    ret = exDOS(ev, numev, npts, xHist, yHist, intv);
+    /* -------------------- Calculate the exact DOS */
+    if (graph_exact_dos) {
+      ret = exDOS(ev, numev, npts, xHist, yHist, intv);
+      fprintf(stdout, " exDOS ret %d \n", ret);
+    }
 
     free_coo(&Acoo);
     free_coo(&Bcoo);
     free_csr(&Acsr);
     free_csr(&Bcsr);
-    fprintf(stdout, " exDOS ret %d \n", ret);
 
-    //--------------------Make OUT dir if it doesn't exist
+    /*--------------------Make OUT dir if it doesn't exist */
     struct stat st = {0};
     if (stat("OUT", &st) == -1) {
       mkdir("OUT", 0750);
     }
 
-    //-------------------- Write to  output files
-    FILE *ofp = fopen("OUT/myydosG.txt", "w");
+    /*-------------------- Write to  output files */
+    char computed_path[1024];
+    strcpy(computed_path, "OUT/LanDosG_Approx_DOS_");
+    strcat(computed_path, io.MatNam1);
+    FILE *ofp = fopen(computed_path, "w");
     for (i = 0; i < npts; i++)
       fprintf(ofp, " %10.4f  %10.4f\n", xdos[i], ydos[i]);
     fclose(ofp);
+    printf("Wrote to:%s \n", computed_path);
 
-    //-------------------- save exact DOS
-    ofp = fopen("OUT/ExydosG.txt", "w");
-    for (i = 0; i < npts; i++)
-      fprintf(ofp, " %10.4f  %10.4f\n", xHist[i], yHist[i]);
-    fclose(ofp);
-    //-------------------- invoke gnuplot for plotting ...
-    ierr = system("gnuplot < testerG.gnuplot");
-    if (ierr) {
-      printf("Could not run gnuplot: %i", ierr);
+    if (graph_exact_dos) {
+      /*-------------------- save exact DOS */
+      strcpy(path, "OUT/LanDosG_Exact_DOS_");
+      strcat(path, io.MatNam1);
+      ofp = fopen(path, "w");
+      for (i = 0; i < npts; i++)
+        fprintf(ofp, " %10.4f  %10.4f\n", xHist[i], yHist[i]);
+      fclose(ofp);
     }
-    //-------------------- and gv for visualizing /
-    ierr = system("gv testerG.eps");
-    if (ierr) {
-      printf("Could not run gv: %i", ierr);
+
+    printf("The data output is located in  OUT/ \n");
+    struct utsname buffer;
+    errno = 0;
+    if (uname(&buffer) != 0) {
+      perror("uname");
+      exit(EXIT_FAILURE);
     }
-    free(xHist);
-    free(yHist);
+
+    /*-------------------- invoke gnuplot for plotting ... */
+    char command[1024];
+    strcpy(command, "gnuplot ");
+    strcat(command, " -e \"filename='");
+    strcat(command, computed_path);
+
+    if (graph_exact_dos) {
+      strcat(command, "';exact_dos='");
+      strcat(command, path);
+      strcat(command, "'\" testerG_ex.gnuplot");
+      ierr = system(command);
+    } else {
+      strcat(command, "'\" testerG.gnuplot");
+      ierr = system(command);
+    }
+
+    if (ierr) {
+      fprintf(stderr,
+              "Error using 'gnuplot < testerG.gnuplot', \n"
+              "postscript plot could not be generated \n");
+    } else {
+      printf("A postscript graph has been placed in %s%s\n", computed_path,
+             ".eps");
+      /*-------------------- and gv for visualizing / */
+      if (!strcmp(buffer.sysname, "Linux")) {
+        strcpy(command, "gv ");
+        strcat(command, computed_path);
+        strcat(command, ".eps &");
+        ierr = system(command);
+        if (ierr) {
+          fprintf(stderr, "Error using 'gv %s' \n", command);
+          printf(
+              "To view the postscript graph use a postcript viewer such as  "
+              "gv \n");
+        }
+      } else {
+        printf(
+            "To view the postscript graph use a postcript viewer such as  "
+            "gv \n");
+      }
+    }
+    if (graph_exact_dos) {
+      free(xHist);
+      free(yHist);
+    }
     free(xdos);
     free(ydos);
     free(ev);
     fclose(fstats);
-    if (sqrtdiag)
-      free(sqrtdiag);
+    if (sqrtdiag) free(sqrtdiag);
   }
   fclose(fmat);
   EVSLFinish();
-  //-------------------- done
   return 0;
 }
