@@ -117,7 +117,7 @@ cholmod_dense cholmod_X, cholmod_B, *cholmod_Y=NULL, *cholmod_E=NULL,
  *
  * */
 void BSolDirect(double *b, double *x, void *data) {
-  //int n;
+  /*int n; */
 
   BSolDataDirect *Bsol_data = (BSolDataDirect *) data;
   cholmod_factor *LB;
@@ -125,7 +125,7 @@ void BSolDirect(double *b, double *x, void *data) {
 
   LB = Bsol_data->LB;
   cc = &Bsol_data->cm;
-  //n = LB->n;
+  /*n = LB->n; */
 
   /* give the wrapper data */
   cholmod_X.x = x;
@@ -161,13 +161,13 @@ int SetupBSolDirect(csrMat *B, void **data) {
   CHOLMOD(check_common)(cc);
   CHOLMOD(check_sparse)(Bcholmod, cc);
   /* symbolic and numeric fact */
-  //printf("start analysis\n");
+  /*printf("start analysis\n"); */
   LB = CHOLMOD(analyze)(Bcholmod, cc);
   CHOLMOD(check_common)(cc);
-  //printf("cc status %d\n", cc->status);
-  //printf("start factorization\n");
+  /*printf("cc status %d\n", cc->status); */
+  /*printf("start factorization\n"); */ 
   CHOLMOD(factorize)(Bcholmod, LB, cc);
-  //printf("done factorization\n");
+  /*printf("done factorization\n"); */
   /* check the factor */
   CHOLMOD(check_factor)(LB, cc);
   /* save the struct to global variable */
@@ -210,7 +210,7 @@ void FreeBSolDirectData(void *vdata) {
  *  x = L^{-T}*b
  * */
 void LTSolDirect(double *b, double *x, void *data) {
-  //int n;
+  /*int n; */
 
   BSolDataDirect *Bsol_data = (BSolDataDirect *) data;
   cholmod_factor *LB;
@@ -218,7 +218,7 @@ void LTSolDirect(double *b, double *x, void *data) {
 
   LB = Bsol_data->LB;
   cc = &Bsol_data->cm;
-  //n = LB->n;
+  /*n = LB->n; */
   
   /* XXX are these always safe ? */
   cholmod_B.x = b;
@@ -248,7 +248,7 @@ void ASIGMABSolDirect(int n, double *br, double *bi, double *xr,
   void* Numeric = data;
   double Control[UMFPACK_CONTROL]; 
   umfpack_zl_defaults(Control);
-  Control[UMFPACK_IRSTEP] = 0; // no iterative refinement for umfpack
+  Control[UMFPACK_IRSTEP] = 0; /* no iterative refinement for umfpack */
   umfpack_zl_solve(UMFPACK_A, NULL, NULL, NULL, NULL, xr, xz, br, bi, 
                    Numeric, Control, NULL);
 }
@@ -318,7 +318,7 @@ int SetupASIGMABSolDirect(csrMat *A, csrMat *BB, int num,
     double zkr = creal(zk[i]);
     double zkc = cimag(zk[i]);
 
-    // shift B
+    /* shift B */
     for (j=0; j<nnzB; j++) {
       int p = map[j];
       double v = B->a[j];

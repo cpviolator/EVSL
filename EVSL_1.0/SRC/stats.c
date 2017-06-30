@@ -17,9 +17,9 @@ void StatsPrint(FILE *fstats) {
   size_t n_svB = stats->n_svB;
   size_t n_svASigB = stats->n_svASigB;
   /* memory */
-  //size_t alloced       = stats->alloced;
-  //size_t alloced_total = stats->alloced_total;
-  //size_t alloced_max   = stats->alloced_max;
+  /*size_t alloced       = stats->alloced;
+    size_t alloced_total = stats->alloced_total;
+    size_t alloced_max   = stats->alloced_max;*/
   /* time */
   fprintf(fstats, " Timing (sec):\n");
   fprintf(fstats, "   Iterative solver         :  %f\n",  t_iter);
